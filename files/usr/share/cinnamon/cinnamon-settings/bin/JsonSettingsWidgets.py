@@ -170,13 +170,11 @@ class JSONSettingsHandler(object):
         return GLib.SOURCE_REMOVE
 
     def get_settings(self):
-        file = open(self.filepath)
-        raw_data = file.read()
-        file.close()
-        try:
-            settings = json.loads(raw_data, object_pairs_hook=collections.OrderedDict)
-        except:
-            raise Exception(f"Failed to parse settings JSON data for file {self.filepath}")
+        with open(self.filepath) as file:
+            try:
+                settings = json.load(file, object_pairs_hook=collections.OrderedDict)
+            except:
+                raise Exception(f"Failed to parse settings JSON data for file {self.filepath}")
         return settings
 
     def save_settings(self):
@@ -209,13 +207,11 @@ class JSONSettingsHandler(object):
                 callback(key, self.settings[key]["value"])
 
     def load_from_file(self, filepath):
-        file = open(filepath)
-        raw_data = file.read()
-        file.close()
-        try:
-            settings = json.loads(raw_data, object_pairs_hook=collections.OrderedDict)
-        except:
-            raise Exception(f"Failed to parse settings JSON data for file {self.filepath}")
+        with open(filepath) as file:
+            try:
+                settings = json.load(file, object_pairs_hook=collections.OrderedDict)
+            except:
+                raise Exception(f"Failed to parse settings JSON data for file {self.filepath}")
 
         for key in self.settings:
             if "value" not in self.settings[key]:

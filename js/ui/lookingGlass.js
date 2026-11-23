@@ -306,6 +306,7 @@ var Inspector = GObject.registerClass({
         this._target = null;
         this._pointerTarget = null;
         this._selectionMade = false;
+        this._closed = false;
         this.passThroughEvents = false;
         this._updatePassthroughText();
     }
@@ -372,12 +373,20 @@ var Inspector = GObject.registerClass({
     }
 
     _close() {
+        if (this._closed)
+            return;
+        this._closed = true;
+
         global.stage.disconnect(this._capturedEventId);
         Main.popModal(this._eventHandler);
 
         this._eventHandler.destroy();
         this._eventHandler = null;
         this.emit('closed');
+
+        this._target = null;
+        this._pointerTarget = null;
+        this.destroy();
     }
 
     _onDestroy() {
@@ -535,6 +544,8 @@ var Melange = class {
 
         this._results = [];
         this.rawResults = [];
+        this._nextResultIndex = 0;
+        this._maxResults = 50;
 
         this._windowList = new WindowList();
         this._history = new History.HistoryManager({ gsettingsKey: HISTORY_KEY });
@@ -590,7 +601,7 @@ var Melange = class {
     }
 
     _pushResult(command, obj, tooltip) {
-        let index = this._results.length;
+        let index = this._nextResultIndex++;
         let result = {"o": obj, "index": index};
         let [type, value] = getObjInfo(obj);
         this.rawResults.push({command: command, type: type, object: value, index: index.toString(), tooltip: tooltip});
@@ -598,6 +609,12 @@ var Melange = class {
 
         this._results.push(result);
         this._it = obj;
+
+        if (this._results.length > this._maxResults) {
+            let dropped = this._results.shift();
+            dropped.o = null;
+            this.rawResults.shift();
+        }
     }
 
     inspect(path) {
@@ -611,7 +628,8 @@ var Melange = class {
     }
 
     getResult(idx) {
-        return this._results[idx].o;
+        let result = this._results.find(entry => entry.index === idx);
+        return result ? result.o : null;
     }
 
     getWindow(idx) {

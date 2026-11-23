@@ -191,6 +191,7 @@ var monitorLabeler = null;
 var themeManager = null;
 var keybindingManager = null;
 var _errorLogStack = [];
+const MAX_ERROR_LOG_ENTRIES = 500;
 var _startDate;
 var _defaultCssStylesheet = null;
 var _cssStylesheet = null;
@@ -1144,6 +1145,8 @@ function _log(category = 'info', msg = '') {
     };
 
     _errorLogStack.push(out);
+    if (_errorLogStack.length > MAX_ERROR_LOG_ENTRIES)
+        _errorLogStack.splice(0, _errorLogStack.length - MAX_ERROR_LOG_ENTRIES);
 
     // If the melange window is open/exists, excessive dbus traffic caused by gesture debug
     // logging can leave the desktop unstable. We end up with lots of:

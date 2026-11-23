@@ -46,7 +46,7 @@ per_file = defaultdict(lambda: defaultdict(int))
 files_scanned = defaultdict(int)
 
 for path in ROOT.rglob("*"):
-    if not path.is_file() or ".git" in path.parts:
+    if not path.is_file() or ".git" in path.parts or path.name == "memory-audit.py":
         continue
     ext = path.suffix.lower()
     if ext not in {".js", ".c", ".h", ".py"}:

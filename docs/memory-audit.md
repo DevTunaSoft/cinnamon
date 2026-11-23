@@ -75,7 +75,8 @@ Old form: `f = open(filename); rootNode = ElementTree.fromstring(f.read()); f.cl
 held the entire XML file as a string *and* the parsed tree at once, and leaked
 the file descriptor if parsing raised. Replaced with
 `ElementTree.parse(filename).getroot()` — streams the file and is exception-safe.
-Static count of whole-file Python reads went from 14 to 11.
+Static count of whole-file Python reads went from 14 to 11 here, then to 9
+after the second pass below.
 
 ### 3. Command/run-dialog history unbounded on load
 
@@ -88,13 +89,49 @@ Added `_trimHistory()` (line 118) and called it at load (line 27), on settings
 change (line 47), and from `_save()` (line 124). No change to the persisted
 format or user-visible behavior.
 
+### 4. Second pass — shell retention and settings churn
+
+All of these were source-verified before editing; none required runtime evidence.
+
+- `js/ui/main.js:194,1147-1149` — `_errorLogStack` had no bound; every `_log()`
+  call pinned a fresh object for the session (the code itself warns about
+  gesture debug log volume at `:1148-1153`). Now capped at 500 entries.
+- `js/ui/lookingGlass.js:547-548,601-616` — Melange `_results`/`rawResults`
+  grew forever and `_results[].o` pinned arbitrary eval'd objects. Both arrays
+  are capped at 50, evicted entries have `o` nulled, and `index` is now a
+  monotonic counter so `getResult()` (`:628-631`) still finds by index.
+- `js/ui/lookingGlass.js:306-309,373-389` — `Inspector` was added to
+  `Main.uiGroup` on construction but never destroyed on close, retaining the
+  last inspected actor. `_close()` now guards re-entry, clears target refs and
+  destroys the actor.
+- `js/ui/popupMenu.js:1616-1625,1873-1886` — `global.menuStack` retained menus
+  destroyed while open; `close()` also spliced with index `-1` when the entry
+  was already gone. Both paths now remove defensively with an index guard.
+- `js/ui/messageTray.js:685-704` — repeated `notify()` of the same notification
+  re-added `clicked`/`destroy` closures capturing the Source. Connections now
+  happen once per notification object.
+- `src/cinnamon-perf-log.c:825-861` — `g_string_free(..., FALSE)` was handed to
+  `write_string()` and never freed. Now written, freed, and returned via a
+  local, matching the `replay_to_json` path at `:923-924`.
+- `ExtensionCore.py:4,1069,1085-1096` — batched spices list drained with
+  `del pending[:10]` (O(n²)); now a `deque` with `popleft()`.
+- `cs_themes.py:787,839,897,931` — one 5 ms GLib timer per theme per refresh;
+  progress is now applied directly, keeping only the final hide timer.
+- `JsonSettingsWidgets.py:173-177,210-214` — whole-file `read()` + manual
+  `close()`; now `with open(...)` + `json.load()`, preserving exception wrapping.
+
 ## Verification actually run
 
-- `python3 -m py_compile` on both changed Python files — passed.
-- `node --check js/misc/history.js` — passed.
+- `python3 -m py_compile` on all eight changed Python files — passed.
+- `node --check` on `main.js`, `lookingGlass.js`, `popupMenu.js`,
+  `messageTray.js`, `history.js` — passed.
 - Stubbed Node harness exercising `HistoryManager` with a 600-entry setting:
   bounded to 5 on init, on `addItem()`/save, and on settings change — passed.
-- Static audit re-run: `py_whole_read` 14 → 11; all other counts unchanged.
+- Static audit re-run after both passes: `py_whole_read` 14 → 9 (the scanner
+  now excludes its own source so it cannot count its pattern strings).
+- GitHub CI on PR #1: Pattern Check passed, Build passed on LMDE 7 and Mint 27;
+  Mint 22 failed only on pre-existing Codespell typos in files this branch
+  does not touch (identical failures on an upstream run from 2026-11-22).
 
 ## Recommended next work (measure first)
 
@@ -115,4 +152,5 @@ format or user-visible behavior.
    window is only 150 ms so memory impact is negligible, but a ring buffer
    would remove the O(n) shift. Low priority.
 
-No changes were merged, pushed, or made to any visual/appearance asset.
+No changes were merged and no visual/appearance asset was touched. The branch
+was pushed to origin and PR #1 opened for review.

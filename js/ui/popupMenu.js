@@ -1614,6 +1614,13 @@ var PopupMenuBase = class PopupMenuBase {
      * Destroys the popup menu completely.
      */
     destroy() {
+        let stack = global.menuStack;
+        if (stack) {
+            let idx = stack.indexOf(this);
+            if (idx >= 0)
+                stack.splice(idx, 1);
+        }
+
         this._signals.disconnectAllSignals();
         this.removeAll();
         this.actor.destroy();
@@ -1873,7 +1880,12 @@ var PopupMenu = class PopupMenu extends PopupMenuBase {
             return;
 
         this.isOpen = false;
-        global.menuStack.splice(global.menuStack.indexOf(this), 1);
+        let stack = global.menuStack;
+        if (stack) {
+            let idx = stack.indexOf(this);
+            if (idx >= 0)
+                stack.splice(idx, 1);
+        }
 
         if (this._activeMenuItem)
             this._activeMenuItem.setActive(false);

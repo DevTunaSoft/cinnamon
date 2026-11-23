@@ -686,18 +686,18 @@ Source.prototype = {
         if (this.notifications.indexOf(notification) < 0) {
             this.notifications.push(notification);
             this.emit('notification-added', notification);
+
+            notification.connect('clicked', () => { this.open() });
+            notification.connect('destroy', () => {
+                let index = this.notifications.indexOf(notification);
+                if (index < 0)
+                    return;
+
+                this.notifications.splice(index, 1);
+                if (this.notifications.length == 0)
+                    this._lastNotificationRemoved();
+            });
         }
-
-        notification.connect('clicked', () => { this.open() });
-        notification.connect('destroy', () => {
-            let index = this.notifications.indexOf(notification);
-            if (index < 0)
-                return;
-
-            this.notifications.splice(index, 1);
-            if (this.notifications.length == 0)
-                this._lastNotificationRemoved();
-        });
 
         this._updateCount();
     },

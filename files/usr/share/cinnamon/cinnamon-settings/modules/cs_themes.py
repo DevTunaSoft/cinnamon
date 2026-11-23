@@ -784,7 +784,7 @@ class Module:
 
                     if os.path.exists(theme_path):
                         chooser.add_picture(theme_path, callback, title=theme, id=theme)
-                    GLib.timeout_add(5, self.increment_progress, (chooser, inc))
+                    chooser.increment_loading_progress(inc)
 
             # Add a blank separator if both single and multi-item categories exist
             if single_item_category_themes and multi_item_category_themes:
@@ -836,7 +836,7 @@ class Module:
 
                 if os.path.exists(theme_path):
                     chooser.add_picture(theme_path, callback, title=theme, id=theme)
-                GLib.timeout_add(5, self.increment_progress, (chooser, inc))
+                chooser.increment_loading_progress(inc)
 
             if dump:
                 if not os.path.exists(cache_folder):
@@ -894,7 +894,7 @@ class Module:
                                 break
                     except:
                         chooser.add_picture(f"/usr/share/cinnamon/thumbnails/{path_suffix}/unknown.png", callback, title=theme_name, id=theme_name)
-                    GLib.timeout_add(5, self.increment_progress, (chooser, inc))
+                    chooser.increment_loading_progress(inc)
 
             # Add a blank separator if both single and multi-item categories exist
             if single_item_category_themes and multi_item_category_themes:
@@ -928,7 +928,7 @@ class Module:
                             break
                 except:
                     chooser.add_picture(f"/usr/share/cinnamon/thumbnails/{path_suffix}/unknown.png", callback, title=theme_name, id=theme_name)
-                GLib.timeout_add(5, self.increment_progress, (chooser, inc))
+                chooser.increment_loading_progress(inc)
         GLib.timeout_add(500, self.hide_progress, chooser)
 
     def increment_progress(self, payload):
