@@ -7,6 +7,7 @@ import locale
 import time
 import hashlib
 from functools import cache
+from collections import deque
 import pickle
 from io import BytesIO
 from xml.etree import ElementTree
@@ -1030,9 +1031,7 @@ class Module:
             loc = self.splitLocaleCode(locale.getlocale()[0])
             res = []
             subLocaleFound = False
-            f = open(filename)
-            rootNode = ElementTree.fromstring(f.read())
-            f.close()
+            rootNode = ElementTree.parse(filename).getroot()
             if rootNode.tag == "wallpapers":
                 for wallpaperNode in rootNode:
                     if wallpaperNode.tag == "wallpaper" and wallpaperNode.get("deleted") != "true":
@@ -1224,13 +1223,13 @@ class ThreadedIconView(Gtk.IconView):
         self.add_attribute(text_renderer, "markup", 2)
         text_renderer.set_property("alignment", Pango.Alignment.CENTER)
 
-        self._loading_queue = []
+        self._loading_queue = deque()
         self._loading_queue_lock = thread.allocate_lock()
 
         self._loading_lock = thread.allocate_lock()
         self._loading = False
 
-        self._loaded_data = []
+        self._loaded_data = deque()
         self._loaded_data_lock = thread.allocate_lock()
 
         self._pending_uri = None
@@ -1271,7 +1270,7 @@ class ThreadedIconView(Gtk.IconView):
 
     def stop_loading(self):
         self._loading_queue_lock.acquire()
-        self._loading_queue = []
+        self._loading_queue.clear()
         self._loading_queue_lock.release()
 
         self._loading_lock.acquire()
@@ -1284,7 +1283,7 @@ class ThreadedIconView(Gtk.IconView):
             self._loading_lock.release()
 
         self._loaded_data_lock.acquire()
-        self._loaded_data = []
+        self._loaded_data.clear()
         self._loaded_data_lock.release()
 
         if self._progress_id > 0:
@@ -1319,9 +1318,8 @@ class ThreadedIconView(Gtk.IconView):
         self._loaded_data_lock.acquire()
         res = self._loading
         to_load = []
-        while len(self._loaded_data) > 0:
-            to_load.append(self._loaded_data[0])
-            self._loaded_data = self._loaded_data[1:]
+        while self._loaded_data:
+            to_load.append(self._loaded_data.popleft())
         self._loading_lock.release()
         self._loaded_data_lock.release()
 
@@ -1343,8 +1341,7 @@ class ThreadedIconView(Gtk.IconView):
             if len(self._loading_queue) == 0:
                 finished = True
             else:
-                to_load = self._loading_queue[0]
-                self._loading_queue = self._loading_queue[1:]
+                to_load = self._loading_queue.popleft()
             self._loading_queue_lock.release()
             if not finished:
                 filename = to_load["filename"]
@@ -1372,9 +1369,7 @@ class ThreadedIconView(Gtk.IconView):
 
     def getFirstFileFromBackgroundXml(self, filename):
         try:
-            f = open(filename)
-            rootNode = ElementTree.fromstring(f.read())
-            f.close()
+            rootNode = ElementTree.parse(filename).getroot()
             if rootNode.tag == "background":
                 for backgroundNode in rootNode:
                     if backgroundNode.tag == "static":
