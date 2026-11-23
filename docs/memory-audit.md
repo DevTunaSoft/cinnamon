@@ -130,8 +130,9 @@ All of these were source-verified before editing; none required runtime evidence
 - Static audit re-run after both passes: `py_whole_read` 14 → 9 (the scanner
   now excludes its own source so it cannot count its pattern strings).
 - GitHub CI on PR #1: Pattern Check passed, Build passed on LMDE 7 and Mint 27;
-  Mint 22 failed only on pre-existing Codespell typos in files this branch
-  does not touch (identical failures on an upstream run from 2026-11-22).
+  Mint 22 failed only on Codespell typos. Every flagged line was verified
+  unchanged from upstream `41893dd` — including lines in files this branch
+  edits — and an upstream CI run from 2026-11-22 shows the same failures.
 
 ## Recommended next work (measure first)
 
