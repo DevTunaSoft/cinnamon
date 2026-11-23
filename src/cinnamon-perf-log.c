@@ -825,6 +825,8 @@ cinnamon_perf_log_dump_events (CinnamonPerfLog   *perf_log,
 {
   GString *output;
   guint i;
+  char *json;
+  gboolean ok;
 
   output = g_string_new (NULL);
   g_string_append (output, "[ ");
@@ -853,7 +855,11 @@ cinnamon_perf_log_dump_events (CinnamonPerfLog   *perf_log,
 
   g_string_append (output, " ]");
 
-  return write_string (out, g_string_free (output, FALSE), error);
+  json = g_string_free (output, FALSE);
+  ok = write_string (out, json, error);
+  g_free (json);
+
+  return ok;
 }
 
 typedef struct {

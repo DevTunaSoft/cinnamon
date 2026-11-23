@@ -446,9 +446,7 @@ class CinnamonSlideshowApplication(Gio.Application):
             locAttrName = "{http://www.w3.org/XML/1998/namespace}lang"
             loc = self.splitLocaleCode(locale.getlocale()[0])
             res = []
-            f = open(filename)
-            rootNode = ElementTree.fromstring(f.read())
-            f.close()
+            rootNode = ElementTree.parse(filename).getroot()
             if rootNode.tag == "wallpapers":
                 for wallpaperNode in rootNode:
                     if wallpaperNode.tag == "wallpaper" and wallpaperNode.get("deleted") != "true":

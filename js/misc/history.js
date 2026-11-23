@@ -24,6 +24,7 @@ HistoryManager.prototype = {
         this._historyIndex = 0;
         if (this._key) {
             this._history = global.settings.get_strv(this._key);
+            this._trimHistory();
             global.settings.connect('changed::' + this._key,
                                     Lang.bind(this, this._historyChanged));
 
@@ -43,6 +44,7 @@ HistoryManager.prototype = {
 
     _historyChanged: function() {
         this._history = global.settings.get_strv(this._key);
+        this._trimHistory();
         this._historyIndex = this._history.length;
     },
 
@@ -113,9 +115,13 @@ HistoryManager.prototype = {
         return current;
     },
 
-    _save: function() {
+    _trimHistory: function() {
         if (this._history.length > this._limit)
             this._history.splice(0, this._history.length - this._limit);
+    },
+
+    _save: function() {
+        this._trimHistory();
 
         if (this._key)
             global.settings.set_strv(this._key, this._history);

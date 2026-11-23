@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 from functools import lru_cache
+from collections import deque
 import os
 import re
 import html
@@ -1065,8 +1066,8 @@ class DownloadSpicesPage(SettingsPage):
         self.extension_rows = kept_rows
 
         to_destroy_uuids = {row.uuid for row in to_destroy}
-        pending = [(uuid, data) for uuid, data in spices_data.items()
-                   if uuid not in existing_uuids or uuid in to_destroy_uuids]
+        pending = deque((uuid, data) for uuid, data in spices_data.items()
+                        if uuid not in existing_uuids or uuid in to_destroy_uuids)
 
         if not pending:
             self._finalize_build()
@@ -1084,12 +1085,12 @@ class DownloadSpicesPage(SettingsPage):
             return False
 
         batch_size = 10
-        for uuid, data in pending[:batch_size]:
+        for _ in range(min(batch_size, len(pending))):
+            uuid, data = pending.popleft()
             row = DownloadSpicesRow(uuid, data, self.spices, self._size_groups)
             self.extension_rows.append(row)
             self.list_box.add(row)
             row.show_all()
-        del pending[:batch_size]
 
         if pending:
             self.progress_bar.get_child().pulse()
